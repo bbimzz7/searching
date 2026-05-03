@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search</title>
+<!-- Referrer-Policy: no-referrer — domain asal tidak dikirim ke tujuan -->
+<meta name="referrer" content="no-referrer">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #0f0f0f;
+    --surface2: #161616;
+    --border: #1c1c1c;
+    --border2: #252525;
+    --amber: #f59e0b;
+    --amber-dim: #6b3a07;
+    --amber-glow: rgba(245,158,11,0.08);
+    --text: #c8c8c8;
+    --muted: #484848;
+    --font: 'Chakra Petch', monospace;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* scanlines */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── TOPBAR ───────────────────────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .logo-mark span {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--amber);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* address bar */
+  .addr-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    height: 34px;
+    padding: 0 12px;
+    gap: 8px;
+    transition: border-color 0.2s;
+  }
+
+  .addr-wrap:focus-within { border-color: var(--amber-dim); }
+
+  .addr-lock {
+    color: var(--amber);
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  #addrBar {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    caret-color: var(--amber);
+  }
+
+  #addrBar::placeholder { color: var(--muted); }
+
+  .btn-nav {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-nav:hover { color: var(--amber); }
+  .btn-nav:disabled { opacity: 0.2; cursor: default; }
+
+  .btn-go {
+    background: var(--amber);
+    border: none;
+    color: #000;
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    padding: 0 14px;
+    height: 34px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-go:hover { background: #fbbf24; }
+
+  /* ── TAB BAR ─────────────────────────────────────────────── */
+  .tabbar {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 8px;
+    gap: 4px;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+    font-family: var(--font);
+    text-transform: uppercase;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    flex-shrink: 0;
+  }
+
+  .tab.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+
+  .tab .tab-close {
+    opacity: 0;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: opacity 0.1s;
+    color: var(--muted);
+  }
+
+  .tab:hover .tab-close { opacity: 1; }
+  .tab:hover { color: var(--text); }
+  .tab.active:hover { color: var(--amber); }
+
+  .btn-newtab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px 8px;
+    font-size: 18px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .btn-newtab:hover { color: var(--amber); }
+
+  /* ── MAIN AREA ───────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* iframe container per tab */
+  .frame-container {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+
+  .frame-container.active { display: block; }
+
+  .frame-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  /* ── HOME PAGE ───────────────────────────────────────────── */
+  .homepage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 20px;
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .home-logo {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .home-logo-text {
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    color: var(--amber);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+  }
+
+  .search-box::before,
+  .search-box::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    border-color: var(--amber);
+    border-style: solid;
+  }
+  .search-box::before { top: -3px; left: -3px; border-width: 1.5px 0 0 1.5px; }
+  .search-box::after  { bottom: -3px; right: -3px; border-width: 0 1.5px 1.5px 0; }
+
+  .search-row {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    transition: border-color 0.2s;
+  }
+
+  .search-row:focus-within { border-color: var(--amber-dim); background: var(--surface2); }
+
+  .search-icon {
+    padding: 0 14px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  #homeSearch {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 15px 0;
+    caret-color: var(--amber);
+  }
+
+  #homeSearch::placeholder { color: var(--muted); }
+
+  .engine-sel {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border2);
+    color: var(--amber);
+    font-family: var(--font);
+    font-size: 10px;
+    padding: 0 12px;
+    height: 50px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    letter-spacing: 0.1em;
+  }
+
+  .engine-sel option { background: #111; color: var(--text); }
+
+  .btn-search-main {
+    background: var(--amber);
+    border: none;
+    color: #000;
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    padding: 0 20px;
+    height: 50px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+
+  .btn-search-main:hover { background: #fbbf24; }
+
+  .shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .sc-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 10px 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .sc-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+  .sc-btn svg { opacity: 0.4; }
+  .sc-btn:hover svg { opacity: 1; }
+
+  /* ── STATUS BAR ──────────────────────────────────────────── */
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  .s-dot {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--amber);
+    margin-right: 6px;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .loading-bar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--amber);
+    width: 0;
+    transition: width 0.3s ease;
+    z-index: 10;
+  }
+
+  .loading-bar.loading { animation: loadprog 1.5s ease infinite; }
+
+  @keyframes loadprog {
+    0% { width: 0; opacity: 1; }
+    70% { width: 85%; opacity: 1; }
+    100% { width: 100%; opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-mark">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5">
+      <circle cx="11" cy="11" r="7"/>
+      <path d="m21 21-3.5-3.5"/>
+      <path d="M11 8v6M8 11h6" stroke-width="1.2"/>
+    </svg>
+    <span>S·SEARCH</span>
+  </div>
+
+  <button class="btn-nav" id="btnBack" onclick="goBack()" disabled title="Back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <button class="btn-nav" id="btnFwd" onclick="goForward()" disabled title="Forward">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
+  <button class="btn-nav" onclick="reload()" title="Reload">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+  </button>
+
+  <div class="addr-wrap">
+    <span class="addr-lock">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </span>
+    <input id="addrBar" type="text" placeholder="cari atau masukkan URL..." autocomplete="off" spellcheck="false"/>
+  </div>
+
+  <button class="btn-go" onclick="navigateAddr()">Buka</button>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabbar" id="tabbar">
+  <!-- tabs injected by JS -->
+  <button class="btn-newtab" onclick="newTab()" title="Tab baru">+</button>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main">
+  <div class="loading-bar" id="loadingBar"></div>
+  <!-- frame containers injected by JS -->
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <span><span class="s-dot"></span>PROXY SERVER AKTIF · ZERO DNS LEAK</span>
+  <span id="statusRight">REFERRER: BLOCKED · HISTORY: MASKED</span>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────
+const PROXY = '/api/proxy?url=';
+
+const ENGINES = {
+  google:     q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+  bing:       q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+  duckduckgo: q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+  youtube:    q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
+};
+
+// ── TAB STATE ───────────────────────────────────────────────────
+let tabs = [];
+let activeTab = null;
+let tabCounter = 0;
+
+function createTab(url = null) {
+  const id = ++tabCounter;
+  const tab = {
+    id,
+    title: url ? 'Loading...' : 'New Tab',
+    url: url || '',
+    isHome: !url,
+  };
+  tabs.push(tab);
+
+  // DOM: tab button
+  const btnTab = document.createElement('button');
+  btnTab.className = 'tab';
+  btnTab.dataset.id = id;
+  btnTab.innerHTML = `<span class="tab-title">${tab.title}</span><span class="tab-close" onclick="closeTab(event,${id})">×</span>`;
+  btnTab.addEventListener('click', () => switchTab(id));
+  document.getElementById('tabbar').insertBefore(btnTab, document.querySelector('.btn-newtab'));
+
+  // DOM: frame container
+  const container = document.createElement('div');
+  container.className = 'frame-container';
+  container.dataset.id = id;
+
+  if (!url) {
+    // Home page
+    container.innerHTML = homepageHTML();
+  } else {
+    const iframe = document.createElement('iframe');
+    iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+    iframe.src = PROXY + encodeURIComponent(url);
+    iframe.addEventListener('load', () => onFrameLoad(id, iframe));
+    container.appendChild(iframe);
+  }
+
+  document.getElementById('main').appendChild(container);
+  switchTab(id);
+
+  if (url) startLoading();
+
+  return id;
+}
+
+function switchTab(id) {
+  activeTab = id;
+
+  // Deactivate all
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.frame-container').forEach(c => c.classList.remove('active'));
+
+  // Activate target
+  const tabEl = document.querySelector(`.tab[data-id="${id}"]`);
+  const container = document.querySelector(`.frame-container[data-id="${id}"]`);
+  if (tabEl) tabEl.classList.add('active');
+  if (container) container.classList.add('active');
+
+  const tab = tabs.find(t => t.id === id);
+  if (tab) {
+    document.getElementById('addrBar').value = tab.isHome ? '' : tab.url;
+    updateNavBtns();
+  }
+}
+
+function closeTab(e, id) {
+  e.stopPropagation();
+  if (tabs.length === 1) { newTab(); }
+
+  const idx = tabs.findIndex(t => t.id === id);
+  tabs = tabs.filter(t => t.id !== id);
+
+  document.querySelector(`.tab[data-id="${id}"]`)?.remove();
+  document.querySelector(`.frame-container[data-id="${id}"]`)?.remove();
+
+  if (activeTab === id) {
+    const next = tabs[Math.min(idx, tabs.length - 1)];
+    if (next) switchTab(next.id);
+  }
+}
+
+function newTab() { createTab(); }
+
+function homepageHTML() {
+  return `
+  <div class="homepage">
+    <div class="home-logo">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <rect x="2" y="2" width="40" height="40" rx="2" stroke="#f59e0b" stroke-width="1.2" fill="none"/>
+        <circle cx="20" cy="20" r="8" stroke="#f59e0b" stroke-width="1.2" fill="none"/>
+        <line x1="26" y1="26" x2="36" y2="36" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="2" y1="2" x2="8" y2="2" stroke="#f59e0b" stroke-width="2"/>
+        <line x1="2" y1="2" x2="2" y2="8" stroke="#f59e0b" stroke-width="2"/>
+        <line x1="42" y1="42" x2="36" y2="42" stroke="#f59e0b" stroke-width="2"/>
+        <line x1="42" y1="42" x2="42" y2="36" stroke="#f59e0b" stroke-width="2"/>
+      </svg>
+      <div class="home-logo-text">Secure Search</div>
+    </div>
+
+    <div class="search-box">
+      <div class="search-row">
+        <span class="search-icon">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <input id="homeSearch" type="text" placeholder="cari sesuatu atau masukkan URL..." autocomplete="off" spellcheck="false"/>
+        <select class="engine-sel" id="engineSel">
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="duckduckgo">DDG</option>
+          <option value="youtube">YouTube</option>
+        </select>
+        <button class="btn-search-main" onclick="homeSearch()">Cari</button>
+      </div>
+    </div>
+
+    <div class="shortcuts-grid">
+      <button class="sc-btn" onclick="proxyOpen('https://youtube.com')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        YouTube
+      </button>
+      <button class="sc-btn" onclick="proxyOpen('https://reddit.com')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+        Reddit
+      </button>
+      <button class="sc-btn" onclick="proxyOpen('https://github.com')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        GitHub
+      </button>
+      <button class="sc-btn" onclick="proxyOpen('https://twitter.com')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+        Twitter
+      </button>
+      <button class="sc-btn" onclick="proxyOpen('https://wikipedia.org')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+        Wikipedia
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────
+function proxyOpen(url, tabId = null) {
+  const id = tabId || activeTab;
+  const tab = tabs.find(t => t.id === id);
+  if (!tab) return;
+
+  tab.url = url;
+  tab.isHome = false;
+  tab.title = 'Loading...';
+
+  const container = document.querySelector(`.frame-container[data-id="${id}"]`);
+  let iframe = container.querySelector('iframe');
+
+  if (!iframe) {
+    container.innerHTML = '';
+    iframe = document.createElement('iframe');
+    iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+    iframe.addEventListener('load', () => onFrameLoad(id, iframe));
+    container.appendChild(iframe);
+  }
+
+  iframe.src = PROXY + encodeURIComponent(url);
+  document.getElementById('addrBar').value = url;
+  updateTabTitle(id, 'Loading...');
+  startLoading();
+}
+
+function onFrameLoad(id, iframe) {
+  stopLoading();
+  try {
+    const title = iframe.contentDocument?.title || 'Loaded';
+    updateTabTitle(id, title || 'Page');
+  } catch {
+    updateTabTitle(id, 'Page');
+  }
+  updateNavBtns();
+}
+
+function updateTabTitle(id, title) {
+  const tab = tabs.find(t => t.id === id);
+  if (tab) tab.title = title;
+  const el = document.querySelector(`.tab[data-id="${id}"] .tab-title`);
+  if (el) el.textContent = title.length > 18 ? title.slice(0, 18) + '…' : title;
+}
+
+function navigateAddr() {
+  let val = document.getElementById('addrBar').value.trim();
+  if (!val) return;
+
+  // Cek apakah itu URL atau query search
+  const isUrl = /^https?:\/\//i.test(val) || (/^[\w-]+\.[\w.]+/.test(val) && !val.includes(' '));
+  if (!isUrl) {
+    val = ENGINES.google(val);
+  } else if (!/^https?:\/\//i.test(val)) {
+    val = 'https://' + val;
+  }
+
+  proxyOpen(val);
+}
+
+function homeSearch() {
+  const q = document.getElementById('homeSearch')?.value.trim();
+  if (!q) return;
+  const engine = document.getElementById('engineSel')?.value || 'google';
+  const url = ENGINES[engine](q);
+
+  // Convert home tab → browser tab
+  const container = document.querySelector(`.frame-container[data-id="${activeTab}"]`);
+  container.innerHTML = '';
+  const tab = tabs.find(t => t.id === activeTab);
+  if (tab) { tab.isHome = false; tab.url = url; }
+
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+  iframe.src = PROXY + encodeURIComponent(url);
+  iframe.addEventListener('load', () => onFrameLoad(activeTab, iframe));
+  container.appendChild(iframe);
+  document.getElementById('addrBar').value = url;
+  startLoading();
+}
+
+function goBack() {
+  const iframe = getActiveIframe();
+  if (iframe) { try { iframe.contentWindow.history.back(); } catch {} }
+}
+
+function goForward() {
+  const iframe = getActiveIframe();
+  if (iframe) { try { iframe.contentWindow.history.forward(); } catch {} }
+}
+
+function reload() {
+  const iframe = getActiveIframe();
+  if (iframe) { try { iframe.contentWindow.location.reload(); } catch { iframe.src = iframe.src; } }
+}
+
+function getActiveIframe() {
+  const container = document.querySelector(`.frame-container[data-id="${activeTab}"]`);
+  return container?.querySelector('iframe');
+}
+
+function updateNavBtns() {
+  // Conservative — iframe history access is restricted cross-origin
+  document.getElementById('btnBack').disabled = false;
+  document.getElementById('btnFwd').disabled = false;
+}
+
+// ── LOADING BAR ─────────────────────────────────────────────────
+function startLoading() {
+  const bar = document.getElementById('loadingBar');
+  bar.style.width = '0';
+  bar.classList.add('loading');
+}
+
+function stopLoading() {
+  const bar = document.getElementById('loadingBar');
+  bar.classList.remove('loading');
+  bar.style.width = '100%';
+  setTimeout(() => { bar.style.width = '0'; }, 400);
+}
+
+// ── KEYBOARD ────────────────────────────────────────────────────
+document.getElementById('addrBar').addEventListener('keydown', e => {
+  if (e.key === 'Enter') navigateAddr();
+});
+
+// Ctrl+T → new tab
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 't') { e.preventDefault(); newTab(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'w') { e.preventDefault(); closeTab(e, activeTab); }
+});
+
+// ── CLOCK ───────────────────────────────────────────────────────
+setInterval(() => {
+  const t = new Date().toTimeString().slice(0, 8);
+  document.getElementById('statusRight').textContent = `REFERRER: BLOCKED · ${t}`;
+}, 1000);
+
+// ── INIT ────────────────────────────────────────────────────────
+createTab();
+</script>
+</body>
+</html>
